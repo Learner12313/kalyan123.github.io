@@ -1,0 +1,517 @@
+<!--
+VitalPath Wellness - single-file HTML
+Features included:
+- Green & white theme
+- Navigation (Home / About / Dashboard / Profile / Achievements)
+- Sign up & Login (localStorage-based simulation)
+- Profile page
+- Daily activity input with a simple AI-like recommender (rule-based) that generates:
+  - Personalized recommendations
+  - Milestones and achievements
+- Progress tracking stored in localStorage
+
+This is a standalone static page you can open in a browser. It's intentionally self-contained so you can test functionality immediately.
+-->
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VitalPath Wellness</title>
+  <meta name="description" content="AI-powered wellness site: personalized fitness, nutrition, and mental-wellness plans." />
+  <style>
+    :root{
+      --green:#19a974; /* primary green */
+      --green-dark:#137a57;
+      --muted:#f4fbf7;
+      --card:#ffffff;
+      --glass: rgba(255,255,255,0.7);
+      --max-w:1100px;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,var(--muted),#ffffff 40%);color:#123;}
+    header{background:linear-gradient(90deg,var(--green),var(--green-dark));color:white;padding:18px 20px;position:sticky;top:0;z-index:10}
+    .container{max-width:var(--max-w);margin:24px auto;padding:0 18px}
+    .nav{display:flex;gap:12px;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:12px;font-weight:700}
+    .brand .logo{width:44px;height:44px;border-radius:10px;background:white;display:flex;align-items:center;justify-content:center;color:var(--green);font-weight:800}
+    nav a{color:rgba(255,255,255,0.95);text-decoration:none;padding:10px;border-radius:8px}
+    nav a:hover{background:rgba(255,255,255,0.08)}
+    .hero{display:grid;grid-template-columns:1fr 420px;gap:20px;align-items:center;padding:28px 0}
+    .card{background:var(--card);border-radius:14px;padding:18px;box-shadow:0 6px 18px rgba(10,20,12,0.06)}
+    .light{background:transparent}
+    h1{margin:0;font-size:28px}
+    p.lead{margin:8px 0 0;color:#114b34}
+    .cta{display:flex;gap:10px;margin-top:14px}
+    .btn{background:var(--green);color:white;padding:10px 14px;border-radius:10px;border:0;cursor:pointer}
+    .btn.ghost{background:transparent;border:1px solid rgba(0,0,0,0.06);color:var(--green)}
+
+    /* Dashboard layout */
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:18px}
+    .small{font-size:13px;color:#456}
+    .activity-input textarea{width:100%;min-height:110px;border-radius:8px;padding:10px;border:1px solid #e6efe9}
+    .recommendations{margin-top:12px}
+    .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:var(--muted);margin-right:8px;margin-top:8px}
+
+    /* Achievements */
+    .ach-grid{display:flex;flex-wrap:wrap;gap:10px}
+    .achievement{padding:10px;border-radius:10px;background:linear-gradient(180deg,#fff,#f6fff9);border:1px solid #e8f6ee;min-width:150px}
+
+    /* Forms */
+    form{display:flex;flex-direction:column;gap:10px}
+    input,select,textarea{padding:10px;border-radius:8px;border:1px solid #e7f3ee}
+
+    footer{padding:20px 0;color:#234}
+
+    /* responsive */
+    @media (max-width:980px){
+      .hero{grid-template-columns:1fr}
+      .grid{grid-template-columns:1fr}
+      nav{display:none}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <div class="brand">
+        <div class="logo">VP</div>
+        <div>
+          <div style="font-size:16px">VitalPath</div>
+          <div style="font-size:12px;opacity:0.9">Wellness • AI-guided</div>
+        </div>
+      </div>
+      <nav>
+        <a href="#home">Home</a>
+        <a href="#about">About</a>
+        <a href="#dashboard">Dashboard</a>
+        <a href="#profile">Profile</a>
+        <a href="#achievements">Achievements</a>
+      </nav>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn" id="openLogin">Login</button>
+        <button class="btn ghost" id="openSignup">Sign up</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="home" class="hero">
+      <div>
+        <div class="card">
+          <h1>VitalPath Wellness</h1>
+          <p class="lead">An AI-powered wellness website offering personalized fitness, nutrition, and mental-wellness plans. It adapts to your routine, tracks progress in real time, and keeps you motivated with simple, achievable goals.</p>
+          <div class="cta">
+            <button class="btn" id="jumpDashboard">Try Dashboard</button>
+            <button class="btn ghost" id="jumpAbout">Learn more</button>
+          </div>
+          <div style="margin-top:16px" class="small">Theme: Green & white • Personal milestones • Achievements • Profile</div>
+        </div>
+        <div style="margin-top:16px" class="card">
+          <h3 style="margin-bottom:6px">How it works</h3>
+          <ol style="margin:0;padding-left:18px">
+            <li>Sign up and complete your profile.</li>
+            <li>Log daily activities or exercises in the Dashboard.</li>
+            <li>AI analyzes the entry and suggests custom recommendations and milestones.</li>
+            <li>Track achievements as milestones are completed.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <h3 style="margin:0">Quick stats</h3>
+          <div style="display:flex;gap:12px;margin-top:12px">
+            <div style="flex:1">
+              <div class="small">Today</div>
+              <div style="font-size:20px;font-weight:700">Stay active</div>
+            </div>
+            <div style="width:1px;background:#eef;opacity:0.6"></div>
+            <div style="flex:1">
+              <div class="small">Milestones</div>
+              <div id="totalMilestones" style="font-weight:700;">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px" class="card">
+          <h4 style="margin:0">Get started</h4>
+          <p class="small" style="margin-top:8px">Sign up to save data, or use the demo account by logging in with any name.</p>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn" id="demoLogin">Demo</button>
+            <button class="btn ghost" id="toSignup">Create account</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="about" style="margin-top:20px">
+      <div class="card">
+        <h2>About VitalPath</h2>
+        <p class="small">VitalPath combines easy daily tracking with AI-driven recommendations to keep your wellness journey simple, sustainable, and tailored to your routine. Whether you want better sleep, consistent workouts, or healthier eating — the system creates realistic milestones based on your life.</p>
+      </div>
+    </section>
+
+    <section id="dashboard" style="margin-top:20px">
+      <div class="grid">
+        <div>
+          <div class="card">
+            <h3>Daily activities</h3>
+            <p class="small">Enter what you did today: exercises, meals, sleep, mood, steps, etc.</p>
+            <div class="activity-input" style="margin-top:8px">
+              <textarea id="activityText" placeholder="e.g., 30 min run, light breakfast, 7 hours sleep, meditated 10 min"></textarea>
+              <div style="display:flex;gap:8px;margin-top:8px">
+                <select id="moodSelect">
+                  <option value="neutral">Mood: Neutral</option>
+                  <option value="happy">Happy</option>
+                  <option value="tired">Tired</option>
+                  <option value="stressed">Stressed</option>
+                </select>
+                <button class="btn" id="analyzeBtn">Analyze (AI)</button>
+                <button class="btn ghost" id="saveEntry">Save</button>
+              </div>
+            </div>
+
+            <div class="recommendations" id="recommendationsBox" style="display:none">
+              <h4 style="margin:8px 0">Recommendations</h4>
+              <div id="recoText"></div>
+              <div style="margin-top:10px">
+                <strong>Suggested milestone:</strong> <span id="suggestedMilestone" class="pill"></span>
+              </div>
+            </div>
+          </div>
+
+          <div id="entriesArea" style="margin-top:14px"></div>
+        </div>
+
+        <aside>
+          <div class="card">
+            <h4>Profile snapshot</h4>
+            <div id="profileSnapshot" style="margin-top:8px">Not logged in</div>
+            <div style="margin-top:10px">
+              <button class="btn ghost" id="goToProfile">Edit profile</button>
+            </div>
+          </div>
+
+          <div style="margin-top:12px" class="card">
+            <h4>Milestones</h4>
+            <div id="milestonesList" style="margin-top:8px">No milestones yet</div>
+          </div>
+
+        </aside>
+      </div>
+    </section>
+
+    <section id="profile" style="margin-top:20px">
+      <div class="card">
+        <h3>Your Profile</h3>
+        <form id="profileForm">
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <input id="nameField" placeholder="Name" style="flex:1" />
+            <select id="genderField">
+              <option value="unspecified">Gender (optional)</option>
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+              <option value="other">Other</option>
+            </select>
+            <input id="ageField" type="number" min="10" max="100" placeholder="Age" style="width:120px" />
+          </div>
+          <textarea id="goalsField" placeholder="Wellness goals (e.g. lose weight, build stamina, improve sleep)"></textarea>
+          <div style="display:flex;gap:8px">
+            <button class="btn" id="saveProfile">Save profile</button>
+            <button class="btn ghost" id="clearData">Clear my data</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section id="achievements" style="margin-top:20px">
+      <div class="card">
+        <h3>Achievements</h3>
+        <div id="achGrid" class="ach-grid" style="margin-top:12px">No achievements yet</div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>© <strong>VitalPath Wellness</strong> - Simple AI wellness demo</div>
+        <div class="small">Made with care • Green & white theme</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Simple modals for login/signup -->
+  <div id="modalRoot" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:18px">
+    <div style="background:rgba(0,0,0,0.45);position:absolute;inset:0;" id="modalBackdrop"></div>
+    <div style="position:relative;z-index:20;max-width:480px;width:100%">
+      <div class="card" id="modalCard">
+        <h3 id="modalTitle">Login</h3>
+        <form id="modalForm">
+          <input id="modalName" placeholder="Your name or email" />
+          <input id="modalPass" type="password" placeholder="Password (any)" />
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn" id="modalSubmit">Continue</button>
+            <button class="btn ghost" type="button" id="modalCancel">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Utilities & simple localStorage-backed 'auth' ---
+    const state = {user: null, entries: [], milestones: [], achievements: []};
+
+    function saveToStorage(){
+      if(state.user) localStorage.setItem('vp_user_'+state.user.id, JSON.stringify({profile: state.user, entries: state.entries, milestones: state.milestones, achievements: state.achievements}));
+      localStorage.setItem('vp_last', state.user ? state.user.id : '');
+      updateUI();
+    }
+
+    function loadFromStorage(){
+      const last = localStorage.getItem('vp_last');
+      if(last){
+        const data = localStorage.getItem('vp_user_'+last);
+        if(data) {
+          const parsed = JSON.parse(data);
+          state.user = parsed.profile;
+          state.entries = parsed.entries || [];
+          state.milestones = parsed.milestones || [];
+          state.achievements = parsed.achievements || [];
+        }
+      }
+      updateUI();
+    }
+
+    // mock id generator
+    function uid(){ return 'u' + Math.random().toString(36).slice(2,9)}
+
+    // --- Authentication (very simple) ---
+    document.getElementById('openSignup').addEventListener('click', ()=>openModal('signup'));
+    document.getElementById('openLogin').addEventListener('click', ()=>openModal('login'));
+    document.getElementById('demoLogin').addEventListener('click', ()=>{
+      // demo user
+      state.user = {id:'demo',name:'Demo User',age:25,gender:'unspecified',goals:'Stay consistent',joined:Date.now()};
+      state.entries = [];
+      state.milestones = [];
+      state.achievements = [];
+      saveToStorage();
+      alert('Logged in as Demo User');
+      scrollToId('dashboard');
+    });
+    document.getElementById('toSignup').addEventListener('click', ()=>openModal('signup'));
+
+    function openModal(mode){
+      const root = document.getElementById('modalRoot');
+      root.style.display='flex';
+      document.getElementById('modalTitle').textContent = mode==='login' ? 'Login' : 'Create account';
+      document.getElementById('modalName').value = '';
+      document.getElementById('modalPass').value = '';
+      root.dataset.mode = mode;
+    }
+    document.getElementById('modalCancel').addEventListener('click', ()=>{
+      document.getElementById('modalRoot').style.display='none';
+    });
+
+    document.getElementById('modalForm').addEventListener('submit',(e)=>{
+      e.preventDefault();
+      const mode = document.getElementById('modalRoot').dataset.mode;
+      const name = document.getElementById('modalName').value.trim() || 'User';
+      if(mode==='signup'){
+        // create new user
+        const newId = uid();
+        state.user = {id:newId,name,age:null,gender:'unspecified',goals:'',joined:Date.now()};
+        state.entries = [];
+        state.milestones = [];
+        state.achievements = [];
+        saveToStorage();
+        alert('Account created — saved locally');
+      } else {
+        // login attempt: if user exists, load, otherwise create quick account
+        const possible = Object.keys(localStorage).find(k=>k.startsWith('vp_user_') && JSON.parse(localStorage.getItem(k)).profile.name===name);
+        if(possible){
+          const payload = JSON.parse(localStorage.getItem(possible));
+          state.user = payload.profile;
+          state.entries = payload.entries || [];
+          state.milestones = payload.milestones || [];
+          state.achievements = payload.achievements || [];
+          alert('Welcome back, '+state.user.name);
+        } else {
+          // quick create
+          state.user = {id: uid(), name, joined: Date.now(), age:null, gender:'unspecified', goals:''};
+          state.entries = [];
+          state.milestones = [];
+          state.achievements = [];
+          alert('New quick account created for '+name);
+        }
+        saveToStorage();
+      }
+      document.getElementById('modalRoot').style.display='none';
+      updateUI();
+    });
+
+    // --- Profile save ---
+    document.getElementById('saveProfile').addEventListener('click',(e)=>{
+      e.preventDefault();
+      if(!state.user) return alert('Please login or sign up first');
+      state.user.name = document.getElementById('nameField').value || state.user.name || 'User';
+      state.user.gender = document.getElementById('genderField').value;
+      const ageVal = Number(document.getElementById('ageField').value);
+      if(ageVal) state.user.age = ageVal;
+      state.user.goals = document.getElementById('goalsField').value;
+      saveToStorage();
+      alert('Profile saved');
+    });
+
+    document.getElementById('clearData').addEventListener('click',(e)=>{
+      e.preventDefault();
+      if(!state.user) return alert('Not logged in');
+      if(confirm('Clear all your data for this account (profile, entries, milestones, achievements)?')){
+        localStorage.removeItem('vp_user_'+state.user.id);
+        state.user = null; state.entries = []; state.milestones = []; state.achievements = [];
+        localStorage.removeItem('vp_last');
+        updateUI();
+        alert('All cleared');
+      }
+    });
+
+    // --- Simple AI analyzer (rule-based) ---
+    function analyzeText(txt, mood){
+      // naive parsing & rules: look for keywords and numbers
+      const s = txt.toLowerCase();
+      const minutes = (s.match(/(\d+)\s*(min|minutes|mins)/g)||[]).map(x=>Number(x.match(/\d+/)[0]));
+      const totalMins = minutes.reduce((a,b)=>a+b,0);
+      const hasRun = /run|jog|sprint/.test(s);
+      const hasWalk = /walk|steps|stroll/.test(s);
+      const hasStrength = /pushup|plank|squat|weights|strength|lift/.test(s);
+      const hasMedit = /meditat|breath|mindful/.test(s);
+      const hasSleep = /sleep|hours/.test(s);
+      const hasBreakfast = /breakfast|egg|oat|porridge|toast|smoothie/.test(s);
+
+      let recs = [];
+      if(totalMins>=30) recs.push('Nice! You logged '+totalMins+' mins of activity — aim to keep this 3–5x per week.');
+      else if(totalMins>=10) recs.push('Good start: try to reach 30 minutes most days.');
+      else recs.push('Try adding a short 15–30 min walk or light workout to boost energy.');
+
+      if(hasStrength) recs.push('Add progressive strength sessions 2x/week to build muscle and stability.');
+      if(hasMedit) recs.push('Great mental care — keep a short daily mindfulness habit (5–10 min).');
+      if(!hasBreakfast) recs.push('Consider a balanced breakfast with protein and fiber to support energy.');
+      if(mood==='stressed') recs.push('You reported stress — try breathing exercises (2–5 min) or a short walk to reset.');
+      if(hasSleep) recs.push('Track sleep duration regularly; aim for consistent bed/wake times.');
+
+      // suggested milestone heuristics
+      let milestone = 'Keep consistent — log activity 5 days in a week';
+      if(totalMins>=30 && hasStrength) milestone = 'Complete 30+ min activity + 1 strength session this week';
+      if(hasMedit && totalMins>=10) milestone = 'Meditate 5 minutes daily for 7 days';
+
+      return {text: recs, milestone}
+    }
+
+    document.getElementById('analyzeBtn').addEventListener('click', ()=>{
+      const text = document.getElementById('activityText').value.trim();
+      const mood = document.getElementById('moodSelect').value;
+      if(!text) return alert('Write something about your day first');
+      const out = analyzeText(text,mood);
+      document.getElementById('recommendationsBox').style.display='block';
+      document.getElementById('recoText').innerHTML = out.text.map(t=>'<div class="small">• '+t+'</div>').join('');
+      document.getElementById('suggestedMilestone').textContent = out.milestone;
+    });
+
+    // Save entry
+    document.getElementById('saveEntry').addEventListener('click', ()=>{
+      if(!state.user) return alert('Please login or sign up first');
+      const text = document.getElementById('activityText').value.trim();
+      const mood = document.getElementById('moodSelect').value;
+      if(!text) return alert('Type an entry to save');
+      const analyzed = analyzeText(text,mood);
+      const entry = {id: uid(), text, mood, recos: analyzed.text, milestone: analyzed.milestone, ts: Date.now()};
+      state.entries.unshift(entry);
+
+      // add milestone if not already present
+      if(!state.milestones.find(m=>m.title===entry.milestone)){
+        state.milestones.push({id:uid(),title:entry.milestone,progress:0,target:7,created:Date.now()});
+      }
+
+      // increase progress for milestone that matches
+      const match = state.milestones.find(m=>m.title===entry.milestone);
+      if(match){ match.progress = Math.min(match.progress+1, match.target); }
+
+      // award achievement if completed
+      state.milestones.forEach(m=>{
+        if(m.progress>=m.target && !state.achievements.find(a=>a.title===m.title)){
+          state.achievements.push({id:uid(),title:'Completed: '+m.title, earned:Date.now()});
+        }
+      });
+
+      saveToStorage();
+      document.getElementById('activityText').value='';
+      document.getElementById('recommendationsBox').style.display='none';
+      updateUI();
+    });
+
+    // render UI pieces
+    function updateUI(){
+      document.getElementById('profileSnapshot').textContent = state.user ? (state.user.name + (state.user.goals ? ' — ' + state.user.goals : '')) : 'Not logged in';
+
+      // profile form fill
+      if(state.user){
+        document.getElementById('nameField').value = state.user.name || '';
+        document.getElementById('genderField').value = state.user.gender || 'unspecified';
+        document.getElementById('ageField').value = state.user.age || '';
+        document.getElementById('goalsField').value = state.user.goals || '';
+      } else {
+        document.getElementById('nameField').value = '';
+        document.getElementById('genderField').value = 'unspecified';
+        document.getElementById('ageField').value = '';
+        document.getElementById('goalsField').value = '';
+      }
+
+      // entries
+      const entriesArea = document.getElementById('entriesArea');
+      entriesArea.innerHTML = '';
+      if(state.entries.length===0) entriesArea.innerHTML = '<div class="card small">No entries yet.</div>';
+      else{
+        state.entries.forEach(e=>{
+          const d = new Date(e.ts);
+          const el = document.createElement('div'); el.className='card';
+          el.style.marginTop='8px';
+          el.innerHTML = `<div style="display:flex;justify-content:space-between"><div><strong>${e.mood}</strong></div><div class="small">${d.toLocaleString()}</div></div><div style="margin-top:8px">${escapeHtml(e.text)}</div><div style="margin-top:8px;font-size:13px;color:#246">Suggestions: ${e.recos.slice(0,2).map(s=>'• '+s).join('<br>')}</div>`;
+          entriesArea.appendChild(el);
+        });
+      }
+
+      document.getElementById('milestonesList').innerHTML = state.milestones.length ? state.milestones.map(m=>`<div class="small">${m.title}<div style="font-weight:700">${m.progress}/${m.target}</div></div>`).join('<hr/>') : 'No milestones yet';
+
+      document.getElementById('totalMilestones').textContent = state.milestones.length;
+
+      const ag = document.getElementById('achGrid');
+      ag.innerHTML = '';
+      if(state.achievements.length===0) ag.innerHTML='No achievements yet';
+      else state.achievements.forEach(a=>{
+        const el = document.createElement('div'); el.className='achievement';
+        el.innerHTML = `<strong>${a.title}</strong><div class="small">Earned ${new Date(a.earned).toLocaleDateString()}</div>`;
+        ag.appendChild(el);
+      });
+
+      // show/hide profile links
+      document.querySelectorAll('header nav a').forEach(a=>a.style.display='inline');
+    }
+
+    // small helpers
+    function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function scrollToId(id){ document.getElementById(id).scrollIntoView({behavior:'smooth'}); }
+
+    document.getElementById('jumpDashboard').addEventListener('click', ()=>scrollToId('dashboard'));
+    document.getElementById('jumpAbout').addEventListener('click', ()=>scrollToId('about'));
+    document.getElementById('goToProfile').addEventListener('click', ()=>scrollToId('profile'));
+
+    // init
+    loadFromStorage();
+  </script>
+</body>
+</html>
